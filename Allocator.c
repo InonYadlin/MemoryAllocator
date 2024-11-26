@@ -74,9 +74,17 @@ BOOL myFree(void* allocatedPtr)
 */
 void* myReAlloc(SIZE_T newSize, void* array)
 {
+    // If the pointer to the given array is null, print an error message and return null
+    if (array == NULL)
+    {
+        printf("Given array is null, aborting\n");
+        return NULL;
+    }
+
     // If the new size is 0, simply free the previous array
     if (newSize == 0)
     {
+        printf("Size is 0, Freeing the memory\n");
         myFree(array);
         return NULL;
     }
