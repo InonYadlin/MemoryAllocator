@@ -66,3 +66,36 @@ BOOL myFree(void* allocatedPtr)
     printf("Deallocation could not be complete: % lu\n", GetLastError());
     return FALSE;
 }
+
+/*
+* Function reallocates memory for a pointer while retaining the original values
+* Input: Size of the new memory block, Pointer to the previous location
+* Output: Pointer to the new memory location
+*/
+void* myReAlloc(SIZE_T newSize, void* array)
+{
+    // If the new size is 0, simply free the previous array
+    if (newSize == 0)
+    {
+        myFree(array);
+        return NULL;
+    }
+
+    // Allocating memory for the new array
+    void* newArray = myMalloc(newSize);
+
+    // Checking if the allocation was successful
+    if (newArray == NULL)
+    {
+        return NULL;
+    }
+
+    // Copying the contents of the old array into the new one
+    memcpy(newArray, array, newSize);
+
+    // Freeing the previous array
+    myFree(array);
+
+    // Returning the pointer to the new array
+    return newArray;
+}

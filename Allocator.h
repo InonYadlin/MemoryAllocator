@@ -9,3 +9,4 @@
 
 void* myMalloc(SIZE_T size);
 BOOL myFree(void* ptr);
+void* myReAlloc(SIZE_T newSize, void* arr);
