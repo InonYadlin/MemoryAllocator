@@ -17,11 +17,11 @@ void printSizes(void)
 
     while (temp != NULL)
     {
-        printf("Size of memory block at address %p: %d bytes\n", temp->_ptr, temp->_size);
+        printf("Size of memory block at address %p: %zu bytes\n", temp->_ptr, temp->_size);
         temp = temp->_next;
     }
 
-    printf("Current allocated bytes: %d\n", TOTAL_MEMORY_ALLOCATED);
+    printf("Current allocated bytes: %zu\n", TOTAL_MEMORY_ALLOCATED);
 }
 
 /*

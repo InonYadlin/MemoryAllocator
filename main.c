@@ -20,7 +20,7 @@ int main(int argc, char** argv)
     improvedFree(c);
     
 
-    printf("Leaks: %d\n", TOTAL_MEMORY_ALLOCATED);
+    printf("Leaks: %zu\n", TOTAL_MEMORY_ALLOCATED);
 
     return 0;
 }
