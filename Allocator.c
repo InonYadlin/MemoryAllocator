@@ -4,6 +4,22 @@
 MemoryBlock *linkedMemoryList = NULL;
 
 /*
+* Function which prints all the sizes of the memory blocks stored in the linked list
+* Input: None
+* Output: None
+*/
+void printSizes(void)
+{
+    MemoryBlock* temp = linkedMemoryList;
+
+    while (temp != NULL)
+    {
+        printf("Size of memory block at address %p: %d bytes\n", temp->_ptr, temp->_size);
+        temp = temp->_next;
+    }
+}
+
+/*
 * Function which allocates memory
 * Input: Size of block to allocate
 * Output: Pointer to allocated memory
@@ -74,6 +90,11 @@ void* improvedMalloc(SIZE_T size)
     return node->_ptr;
 }
 
+/*
+* Function which frees allocated memory
+* Input: Pointer to allocated memory
+* Output: If the freeing was successful
+*/
 BOOL improvedFree(void* ptr)
 {
     // Checking if the list of memory blocks is null
@@ -157,16 +178,57 @@ BOOL improvedFree(void* ptr)
     return FALSE;
 }
 
-void printSizes()
+/*
+* Function reallocates memory for a pointer while retaining the original values
+* Input: Size of the new memory block, Pointer to the previous location
+* Output: Pointer to the new memory location
+*/
+void improvedReAlloc(SIZE_T newSize, void* ptr)
 {
+    // If the pointer to the given array is null, print an error message and return null
+    if (ptr == NULL)
+    {
+        printf("Given array is null, aborting\n");
+        return NULL;
+    }
+
+    // If the new size is 0, simply free the previous array
+    if (newSize == 0)
+    {
+        printf("Size is 0, Freeing the memory\n");
+        improvedFree(ptr);
+        return NULL;
+    }
+
+    // Creating the new array
+    void* newPtr = basicMalloc(newSize);
+
+    // Placing the new array in the linked list
     MemoryBlock* temp = linkedMemoryList;
-    
     while (temp != NULL)
     {
-        printf("Size of memory block at address %p: %d bytes\n", temp->_ptr, temp->_size);
+        // If the pointer is equal to the given, place the new one into the link
+        if (temp->_ptr == ptr)
+        {
+            temp->_ptr = newPtr;
+            temp->_size = newSize;
+            break;
+        }
+
+        // Iterate to the next link
         temp = temp->_next;
     }
+
+    // Copying the contents of the old array into the new one
+    memcpy(newPtr, ptr, newSize);
+
+    // Freeing the previous array
+    improvedFree(ptr);
+
+    // Returning the pointer to the new array
+    return newPtr;
 }
+
 /*
 * Function which allocates memory
 * Input: Size of block to allocate
@@ -239,10 +301,10 @@ BOOL basicFree(void* allocatedPtr)
 * Input: Size of the new memory block, Pointer to the previous location
 * Output: Pointer to the new memory location
 */
-void* basicReAlloc(SIZE_T newSize, void* array)
+void* basicReAlloc(SIZE_T newSize, void* ptr)
 {
     // If the pointer to the given array is null, print an error message and return null
-    if (array == NULL)
+    if (ptr == NULL)
     {
         printf("Given array is null, aborting\n");
         return NULL;
@@ -252,26 +314,25 @@ void* basicReAlloc(SIZE_T newSize, void* array)
     if (newSize == 0)
     {
         printf("Size is 0, Freeing the memory\n");
-        basicFree(array);
+        basicFree(ptr);
         return NULL;
     }
 
     // Allocating memory for the new array
-    void* newArray = basicMalloc(newSize);
+    void* newPtr = basicMalloc(newSize);
 
     // Checking if the allocation was successful
-    if (newArray == NULL)
+    if (newPtr == NULL)
     {
         return NULL;
     }
 
     // Copying the contents of the old array into the new one
-    memcpy(newArray, array, newSize);
+    memcpy(newPtr, ptr, newSize);
 
     // Freeing the previous array
-    basicFree(array);
+    basicFree(ptr);
 
     // Returning the pointer to the new array
-    return newArray;
+    return newPtr;
 }
-
