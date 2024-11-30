@@ -3,6 +3,9 @@
 // Array which stores all allocated memory blocks
 MemoryBlock *linkedMemoryList = NULL;
 
+// Variable which tracks all allocated memory
+SIZE_T TOTAL_MEMORY_ALLOCATED = 0;
+
 /*
 * Function which prints all the sizes of the memory blocks stored in the linked list
 * Input: None
@@ -17,6 +20,8 @@ void printSizes(void)
         printf("Size of memory block at address %p: %d bytes\n", temp->_ptr, temp->_size);
         temp = temp->_next;
     }
+
+    printf("Current allocated bytes: %d\n", TOTAL_MEMORY_ALLOCATED);
 }
 
 /*
@@ -41,14 +46,18 @@ void* improvedMalloc(SIZE_T size)
         PAGE_READWRITE       // Allow read and write access
     );
     
-    // Placing the size in the node
-    node->_size = size;
-
+    // Making sure the memory was allocated properly
     if (node == NULL)
     {
         printf("VirtualAlloc failed with error : % lu\n", GetLastError());
         return NULL;
     }
+
+    // Tracking the number of bytes allocated
+    TOTAL_MEMORY_ALLOCATED += sizeof(MemoryBlock);
+
+    // Placing the size in the node
+    node->_size = size;
 
     // Allocating the memory
     node->_ptr = VirtualAlloc(
@@ -64,8 +73,14 @@ void* improvedMalloc(SIZE_T size)
     if (node->_ptr == NULL)
     {
         printf("VirtualAlloc failed with error : % lu\n", GetLastError());
+        basicFree(node);
+        // Tracking the number of bytes allocated
+        TOTAL_MEMORY_ALLOCATED -= sizeof(MemoryBlock);
         return NULL;
     }
+
+    // Tracking the number of bytes allocated
+    TOTAL_MEMORY_ALLOCATED += size;
 
     // If the list is empty, set the new node as the head and return its pointer
     if (linkedMemoryList == NULL)
@@ -122,17 +137,25 @@ BOOL improvedFree(void* ptr)
         // Free the memory associated with the node
         if (removedNode->_ptr) 
         {
+            SIZE_T size = removedNode->_size;
+
             // Free the allocated memory
             if (!VirtualFree(removedNode->_ptr, 0, MEM_RELEASE))
             {
                 printf("Error freeing memory\n");
                 return FALSE;
-            }
+            }           
+
+            // Tracking the number of bytes allocated
+            TOTAL_MEMORY_ALLOCATED -= size;
         }
 
         // Free the memory block node
         if (VirtualFree(removedNode, 0, MEM_RELEASE))
         {
+            // Tracking the number of bytes allocated
+            TOTAL_MEMORY_ALLOCATED -= sizeof(MemoryBlock);
+            printf("Deallocation successful!\n");
             return !FALSE;
         }
 
@@ -154,17 +177,25 @@ BOOL improvedFree(void* ptr)
             // Free the memory associated with the node
             if (removedNode->_ptr) 
             {
+                SIZE_T size = removedNode->_size;
+
                 // Free the allocated memory
                 if (!VirtualFree(removedNode->_ptr, 0, MEM_RELEASE))
                 {
                     printf("Error freeing memory\n");
                     return FALSE;
                 }
+
+                // Tracking the number of bytes allocated
+                TOTAL_MEMORY_ALLOCATED -= size;
             }
             // Free the memory block node
             if (VirtualFree(removedNode, 0, MEM_RELEASE))
             {
-                return !FALSE;
+                // Tracking the number of bytes allocated
+                TOTAL_MEMORY_ALLOCATED -= sizeof(MemoryBlock);
+                printf("Deallocation successful!\n");
+                return !FALSE;     
             }
 
             printf("Error freeing memory\n");
@@ -183,7 +214,7 @@ BOOL improvedFree(void* ptr)
 * Input: Size of the new memory block, Pointer to the previous location
 * Output: Pointer to the new memory location
 */
-void improvedReAlloc(SIZE_T newSize, void* ptr)
+void* improvedReAlloc(SIZE_T newSize, void* ptr)
 {
     // If the pointer to the given array is null, print an error message and return null
     if (ptr == NULL)
@@ -205,8 +236,10 @@ void improvedReAlloc(SIZE_T newSize, void* ptr)
 
     // Placing the new array in the linked list
     MemoryBlock* temp = linkedMemoryList;
+    SIZE_T size;
     while (temp != NULL)
     {
+        size = temp->_size;
         // If the pointer is equal to the given, place the new one into the link
         if (temp->_ptr == ptr)
         {
@@ -223,7 +256,11 @@ void improvedReAlloc(SIZE_T newSize, void* ptr)
     memcpy(newPtr, ptr, newSize);
 
     // Freeing the previous array
-    improvedFree(ptr);
+    if (basicFree(ptr))
+    {
+        // Tracking the number of bytes allocated
+        TOTAL_MEMORY_ALLOCATED -= size;
+    }
 
     // Returning the pointer to the new array
     return newPtr;
@@ -257,6 +294,9 @@ void* basicMalloc(SIZE_T size)
         printf("VirtualAlloc failed with error : % lu\n", GetLastError());
         return NULL;
     }
+
+    // Tracking the number of bytes allocated
+    TOTAL_MEMORY_ALLOCATED += size;
 
     // Print the address of the allocated memory
     printf("Memory successfully allocated at address: %p\n", allocatedMemory);
