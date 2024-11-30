@@ -20,6 +20,3 @@ void printSizes(void);
 void* improvedMalloc(SIZE_T size);
 BOOL improvedFree(void* ptr);
 void* improvedReAlloc(SIZE_T newSize, void* ptr);
-void* basicMalloc(SIZE_T size);
-BOOL basicFree(void* ptr);
-void* basicReAlloc(SIZE_T newSize, void* ptr);
