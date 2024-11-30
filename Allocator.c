@@ -31,77 +31,49 @@ void printSizes(void)
 */
 void* improvedMalloc(SIZE_T size)
 {
-    // Checking if the given size is 0 or less
+    // Checking if the given size is valid
     if (size <= 0)
     {
         printf("Invalid size, please enter a number greater than 0!\n");
         return NULL;
     }
 
-    // Allocating memory for the new node
+    // Allocate memory for the MemoryBlock metadata (size, pointer, etc.)
     MemoryBlock* node = (MemoryBlock*)VirtualAlloc(
         NULL,                   // Let the system determine the starting address
-        sizeof(MemoryBlock),    // Size of the Node
-        MEM_COMMIT | MEM_RESERVE, // Reserve and commit the memory
-        PAGE_READWRITE       // Allow read and write access
+        sizeof(MemoryBlock),    // Size of the metadata structure
+        MEM_COMMIT | MEM_RESERVE,
+        PAGE_READWRITE
     );
-    
-    // Making sure the memory was allocated properly
+
     if (node == NULL)
     {
-        printf("VirtualAlloc failed with error : % lu\n", GetLastError());
+        printf("VirtualAlloc failed with error: %lu\n", GetLastError());
         return NULL;
     }
 
-    // Tracking the number of bytes allocated
-    TOTAL_MEMORY_ALLOCATED += sizeof(MemoryBlock);
-
-    // Placing the size in the node
     node->_size = size;
 
-    // Allocating the memory
+    // Allocate the actual memory block
     node->_ptr = VirtualAlloc(
-        NULL,                // Let the system determine the starting address
-        size,                // Size of the memory block
-        MEM_COMMIT | MEM_RESERVE, // Reserve and commit the memory
-        PAGE_READWRITE       // Allow read and write access
+        NULL, size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE
     );
 
-    printf("memory address: %p\n", node->_ptr);
-
-    // Checking if the memory allocated properly
     if (node->_ptr == NULL)
     {
-        printf("VirtualAlloc failed with error : % lu\n", GetLastError());
-        basicFree(node);
-        // Tracking the number of bytes allocated
-        TOTAL_MEMORY_ALLOCATED -= sizeof(MemoryBlock);
+        printf("Failed to allocate memory block.\n");
+        VirtualFree(node, 0, MEM_RELEASE);
         return NULL;
     }
 
-    // Tracking the number of bytes allocated
-    TOTAL_MEMORY_ALLOCATED += size;
+    // Track memory allocation
+    TOTAL_MEMORY_ALLOCATED += sizeof(MemoryBlock) + size;
 
-    // If the list is empty, set the new node as the head and return its pointer
-    if (linkedMemoryList == NULL)
-    {
-        linkedMemoryList = node;
-        node->_next = NULL; // Ensure the new node's next pointer is NULL
-        return node->_ptr;
-    }
+    // Insert node into linked list
+    node->_next = linkedMemoryList;
+    linkedMemoryList = node;
 
-    // Traverse to the end of the list
-    MemoryBlock* current = linkedMemoryList;
-
-    while (current->_next != NULL)
-    {
-        current = current->_next;
-    }
-
-    // Append the new node
-    current->_next = node;
-    node->_next = NULL; // Ensure the new node's next pointer is NULL
-
+    printf("Allocated %zu bytes at %p\n", size, node->_ptr);
     return node->_ptr;
 }
 
