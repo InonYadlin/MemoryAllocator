@@ -151,54 +151,45 @@ BOOL improvedFree(void* ptr)
 */
 void* improvedReAlloc(SIZE_T newSize, void* ptr)
 {
-    // If the pointer to the given array is null, print an error message and return null
+    // Check if pointer is NULL, or newSize is zero
     if (ptr == NULL)
     {
-        printf("Given array is null, aborting\n");
-        return NULL;
+        return improvedMalloc(newSize);  // Allocate new memory
     }
-
-    // If the new size is 0, simply free the previous array
     if (newSize == 0)
     {
-        printf("Size is 0, Freeing the memory\n");
-        improvedFree(ptr);
+        improvedFree(ptr);  // Free the current memory
         return NULL;
     }
 
-    // Creating the new array
-    void* newPtr = basicMalloc(newSize);
-
-    // Placing the new array in the linked list
+    // Find the block in the list
     MemoryBlock* temp = linkedMemoryList;
-    SIZE_T size;
     while (temp != NULL)
     {
-        size = temp->_size;
-        // If the pointer is equal to the given, place the new one into the link
         if (temp->_ptr == ptr)
         {
-            temp->_ptr = newPtr;
-            temp->_size = newSize;
-            break;
+            // Reallocate memory (allocate a new block)
+            void* newPtr = improvedMalloc(newSize);
+            if (newPtr == NULL)
+            {
+                return NULL;
+            }
+
+            // Copy the old data into the new block
+            SIZE_T copySize = (newSize < temp->_size) ? newSize : temp->_size;
+            memcpy(newPtr, ptr, copySize);
+
+            // Free the old block
+            improvedFree(ptr);
+
+            return newPtr;
         }
 
-        // Iterate to the next link
         temp = temp->_next;
     }
 
-    // Copying the contents of the old array into the new one
-    memcpy(newPtr, ptr, newSize);
-
-    // Freeing the previous array
-    if (basicFree(ptr))
-    {
-        // Tracking the number of bytes allocated
-        TOTAL_MEMORY_ALLOCATED -= size;
-    }
-
-    // Returning the pointer to the new array
-    return newPtr;
+    printf("Pointer %p not found.\n", ptr);
+    return NULL;
 }
 
 /*
