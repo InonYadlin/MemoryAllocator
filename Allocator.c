@@ -84,100 +84,63 @@ void* improvedMalloc(SIZE_T size)
 */
 BOOL improvedFree(void* ptr)
 {
-    // Checking if the list of memory blocks is null
+    // Check if linkedMemoryList is empty
     if (linkedMemoryList == NULL)
     {
         printf("No memory was allocated\n");
         return FALSE;
     }
 
-    // Checking if the given pointer is null
+    // Check if the pointer is NULL
     if (ptr == NULL)
     {
-        printf("Given pointer is a NULL\n");
-        return FALSE;
-    }
-
-    // Handle the case where the head node is the one to remove
-    if (linkedMemoryList->_ptr == ptr) 
-    {
-        MemoryBlock* removedNode = linkedMemoryList;
-
-        // Update the head pointer
-        linkedMemoryList = linkedMemoryList->_next; 
-
-        // Free the memory associated with the node
-        if (removedNode->_ptr) 
-        {
-            SIZE_T size = removedNode->_size;
-
-            // Free the allocated memory
-            if (!VirtualFree(removedNode->_ptr, 0, MEM_RELEASE))
-            {
-                printf("Error freeing memory\n");
-                return FALSE;
-            }           
-
-            // Tracking the number of bytes allocated
-            TOTAL_MEMORY_ALLOCATED -= size;
-        }
-
-        // Free the memory block node
-        if (VirtualFree(removedNode, 0, MEM_RELEASE))
-        {
-            // Tracking the number of bytes allocated
-            TOTAL_MEMORY_ALLOCATED -= sizeof(MemoryBlock);
-            printf("Deallocation successful!\n");
-            return !FALSE;
-        }
-
-        printf("Error freeing memory\n");
+        printf("Given pointer is NULL\n");
         return FALSE;
     }
 
     MemoryBlock* temp = linkedMemoryList;
+    MemoryBlock* prev = NULL;
 
-    // Traverse the list to find the node to remove
-    while (temp->_next != NULL) {
-        if (temp->_next->_ptr == ptr) {
-            // Node found, remove it
-            MemoryBlock* removedNode = temp->_next;
-
-            // Update the link to skip the removed node
-            temp->_next = temp->_next->_next; 
-
-            // Free the memory associated with the node
-            if (removedNode->_ptr) 
+    // Find the block to free
+    while (temp != NULL)
+    {
+        SIZE_T size = temp->_size;
+        if (temp->_ptr == ptr)
+        {
+            if (prev != NULL)
             {
-                SIZE_T size = removedNode->_size;
-
-                // Free the allocated memory
-                if (!VirtualFree(removedNode->_ptr, 0, MEM_RELEASE))
-                {
-                    printf("Error freeing memory\n");
-                    return FALSE;
-                }
-
-                // Tracking the number of bytes allocated
-                TOTAL_MEMORY_ALLOCATED -= size;
+                prev->_next = temp->_next;
             }
-            // Free the memory block node
-            if (VirtualFree(removedNode, 0, MEM_RELEASE))
+            else
             {
-                // Tracking the number of bytes allocated
-                TOTAL_MEMORY_ALLOCATED -= sizeof(MemoryBlock);
-                printf("Deallocation successful!\n");
-                return !FALSE;     
+                linkedMemoryList = temp->_next;
             }
 
-            printf("Error freeing memory\n");
-            return FALSE;
+            // Free the allocated memory
+            if (!VirtualFree(temp->_ptr, 0, MEM_RELEASE))
+            {
+                printf("Error freeing memory at %p\n", ptr);
+                return FALSE;
+            }
+
+            // Free the metadata
+            if (!VirtualFree(temp, 0, MEM_RELEASE))
+            {
+                printf("Error freeing memory block metadata.\n");
+                return FALSE;
+            }
+
+            // Update total memory allocated
+            TOTAL_MEMORY_ALLOCATED -= size + sizeof(MemoryBlock);
+            printf("Memory freed successfully!\n");
+            return TRUE;
         }
 
-        // Move to the next node
-        temp = temp->_next; 
+        prev = temp;
+        temp = temp->_next;
     }
 
+    printf("Pointer %p not found in allocated memory list.\n", ptr);
     return FALSE;
 }
 
