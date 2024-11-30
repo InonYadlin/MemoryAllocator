@@ -7,6 +7,16 @@
 
 #define FALSE 0
 
-void* myMalloc(SIZE_T size);
-BOOL myFree(void* ptr);
-void* myReAlloc(SIZE_T newSize, void* arr);
+typedef struct MemoryBlock
+{
+	void *_ptr;
+	size_t _size;
+	struct MemoryBlock *_next;
+} MemoryBlock;
+
+void printSizes();
+void* improvedMalloc(SIZE_T size);
+BOOL improvedFree(void* ptr);
+void* basicMalloc(SIZE_T size);
+BOOL basicFree(void* ptr);
+void* basicReAlloc(SIZE_T newSize, void* arr);
